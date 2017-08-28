@@ -1,0 +1,10 @@
+{
+    entry = {
+	bundle = Mercury;
+	cell = PSLinkCell;
+	detail = MercuryListController;
+  icon = icon.png;
+	isController = 1;
+	label = Mercury;
+    };
+}

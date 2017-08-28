@@ -1,0 +1,9 @@
+Package: com.hackingdartmouth.mercury
+Name: Mercury
+Depends: mobilesubstrate, org.thebigboss.libcolorpicker
+Version: 1.0.0
+Architecture: iphoneos-arm
+Description: A tweak to add a "not-responded" indicator.
+Maintainer: Alex Beals <Alex.Beals.18@dartmouth.edu>
+Author: Alex Beals <Alex.Beals.18@dartmouth.edu>
+Section: Tweaks
