@@ -1,6 +1,6 @@
 {
     entry = {
-	bundle = Mercury;
+	bundle = MercuryPrefs;
 	cell = PSLinkCell;
 	detail = MercuryListController;
   icon = icon.png;

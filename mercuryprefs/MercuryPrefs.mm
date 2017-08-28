@@ -37,14 +37,14 @@ typedef BOOL (^ Evaluator)(UIView *);
     // Add background image
     self.backgroundColor = [UIColor clearColor];
     int type = [[specifier propertyForKey:@"type"] intValue];
-    _bgImage = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Mercury.bundle/preview.jpg"]];
+    _bgImage = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/preview.jpg"]];
     _bgImage.frame = self.contentView.bounds;
     _bgImage.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     _bgImage.contentMode = UIViewContentModeScaleAspectFit;
     [self.contentView addSubview:_bgImage];
 
     // Add avatar
-    _avatar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Mercury.bundle/ContactImage.png"]];
+    _avatar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/ContactImage.png"]];
     _avatar.frame = CGRectMake(28, 10, 45, 45);
     [self.contentView addSubview:_avatar];
 
@@ -344,7 +344,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
                 cell:PSButtonCell
                 edit:Nil];
     [button setButtonAction:@selector(donate)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Mercury.bundle/paypal.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/paypal.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     button = [PSSpecifier preferenceSpecifierNamed:@"Source Code on Github"
@@ -355,7 +355,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
       cell:PSButtonCell
       edit:Nil];
     [button setButtonAction:@selector(source)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Mercury.bundle/github.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/github.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     button = [PSSpecifier preferenceSpecifierNamed:@"Email Developer"
@@ -366,7 +366,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
       cell:PSButtonCell
       edit:Nil];
     [button setButtonAction:@selector(email)];
-    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/Mercury.bundle/mail.png"] forKey:@"iconImage"];
+    [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/mail.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
     // Get the current year
