@@ -95,7 +95,6 @@ static UIImageView* getIndicator(UIView *view) {
     } else {
       [currentIndicator setHidden:true];
     }
-    [currentIndicator release];
   } else if (style == 2) {
     CKAvatarView *avatarView = [self avatarView];
     avatarView.layer.shadowColor = indicatorColor.CGColor;
@@ -169,7 +168,6 @@ static UIImageView* getIndicator(UIView *view) {
     } else {
       [currentIndicator setHidden:true];
     }
-    [currentIndicator release];
   }
 }
 
