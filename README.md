@@ -4,11 +4,8 @@ Mercury is a Cydia tweak that adds a customizable indicator to messages that you
 
 ### What It Looks Like
 <p align="center">
-  <img src="screenshots/messages.jpg" height="300" >
-</p>
-
-<p align="center">
-  <video src="screenshots/settings-silent.m4v" height="300"></video>
+  <img src="screenshots/messages.jpg" height="300">
+  <img src="screenshots/settings-silent.gif" height="300" >
 </p>
 
 ### Installation
