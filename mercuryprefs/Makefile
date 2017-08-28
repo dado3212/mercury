@@ -3,7 +3,7 @@ ARCHS = armv7 armv7s arm64
 include theos/makefiles/common.mk
 
 BUNDLE_NAME = MercuryPrefs
-MercuryPrefs_FILES = MercuryPrefs.mm
+MercuryPrefs_FILES = MercuryPrefs.mm ColorPicker.mm ImagePreviewCell.mm
 MercuryPrefs_INSTALL_PATH = /Library/PreferenceBundles
 MercuryPrefs_FRAMEWORKS = UIKit CoreGraphics QuartzCore
 MercuryPrefs_PRIVATE_FRAMEWORKS = Preferences

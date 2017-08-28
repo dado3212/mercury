@@ -5,19 +5,17 @@
 
 static char INDICATOR_KEY;
 
-NSString *prefPath = @"/var/mobile/Library/Preferences/com.hackingdartmouth.mercury.plist";
-
+// Get the default parameters
 static NSMutableDictionary *getDefaults() {
   NSMutableDictionary *prefs = [[NSMutableDictionary alloc] init];
-
-  [prefs setValue:@1 forKey:@"type"];
-  [prefs setValue:@"#A98545:1.0" forKey:@"color"];
-  [prefs setValue:@"3" forKey:@"radius"];
-  [prefs setValue:@NO forKey:@"groups"];
-
+  [prefs setValue:kTypeDefault forKey:kTypeKey];
+  [prefs setValue:kColorDefault forKey:kColorKey];
+  [prefs setValue:kRadiusDefault forKey:kRadiusKey];
+  [prefs setValue:kGroupsDefault forKey:kGroupsKey];
   return prefs;
 }
 
+// Search immediate subviews for indicator
 static UIImageView* getIndicator(UIView *view) {
   for (UIView *subview in [view subviews]) {
     if ([subview isKindOfClass:[UIImageView class]]) {
@@ -33,17 +31,17 @@ static UIImageView* getIndicator(UIView *view) {
 %hook CKConversationListCell
 -(void)layoutSubviews {
   // Load preferences
-  NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:prefPath];
+  NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:kPrefPath];
   if (!prefs) {
     prefs = getDefaults();
   }
-  UIColor *indicatorColor = LCPParseColorString(prefs[@"color"], @"#A98545:1.0"); 
-  int style = [prefs[@"type"] intValue];
+  UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault); 
+  int style = [prefs[kTypeKey] intValue];
 
   bool needsResponse = (
     ![[[[self conversation] chat] lastFinishedMessage] isFromMe] &&
     (
-      ([prefs[@"groups"] boolValue] && style != 3) ||
+      ([prefs[kGroupsKey] boolValue] && style != 3) ||
       ![[self conversation] isGroupConversation]
     )
   );
@@ -51,8 +49,8 @@ static UIImageView* getIndicator(UIView *view) {
   // Layout all of the other subviews
   %orig;
 
-  // Get current indicator
   if (style == 1) {
+    // Get current indicator
     UIImageView *currentIndicator = getIndicator(self.contentView);
 
     // If no indicator, then add it
@@ -91,17 +89,18 @@ static UIImageView* getIndicator(UIView *view) {
       currentIndicator = newIndicator;
     }
 
-    // If someone else sent the last message, make the indicator visible
+    // Conditionally make indicator visible
     if (needsResponse) {
       [currentIndicator setHidden:false];
     } else {
       [currentIndicator setHidden:true];
     }
+    [currentIndicator release];
   } else if (style == 2) {
     CKAvatarView *avatarView = [self avatarView];
     avatarView.layer.shadowColor = indicatorColor.CGColor;
     avatarView.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
-    avatarView.layer.shadowRadius = (CGFloat)[prefs[@"radius"] intValue];
+    avatarView.layer.shadowRadius = (CGFloat)[prefs[kRadiusKey] intValue];
 
     if (needsResponse) {
       avatarView.layer.shadowOpacity = 1.0f;
@@ -109,7 +108,7 @@ static UIImageView* getIndicator(UIView *view) {
       avatarView.layer.shadowOpacity = 0.0f;
     }
   } else if (style == 3) {
-    int borderRadius = [prefs[@"radius"] intValue];
+    int borderRadius = [prefs[kRadiusKey] intValue];
 
     // Requires group indicators to be turned off
     UIImageView *currentIndicator = getIndicator(self.contentView);
@@ -164,12 +163,13 @@ static UIImageView* getIndicator(UIView *view) {
       currentIndicator = newIndicator;
     }
 
-    // If someone else sent the last message, make the indicator visible
+    // Conditionally make indicator visible
     if (needsResponse) {
       [currentIndicator setHidden:false];
     } else {
       [currentIndicator setHidden:true];
     }
+    [currentIndicator release];
   }
 }
 

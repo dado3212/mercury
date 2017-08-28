@@ -1,180 +1,4 @@
-#import <Preferences/PSListController.h>
-#import <Preferences/PSSpecifier.h>
-#import "PSTableCell.h"
-#import <libcolorpicker.h>
-#import <substrate.h>
-#import <UIKit/UIKit.h>
-#import <QuartzCore/QuartzCore.h>
-
-NSString *prefPath = @"/var/mobile/Library/Preferences/com.hackingdartmouth.mercury.plist";
-
-typedef BOOL (^ Evaluator)(UIView *);
-
-@interface ColorPicker : PFLiteColorCell
-@end
-
-@implementation ColorPicker
-- (UIColor *)previewColor {
-  NSMutableDictionary *prefs = [NSMutableDictionary dictionaryWithContentsOfFile:prefPath];
-
-  UIColor *color = LCPParseColorString([prefs objectForKey:@"color"], @"#A98545:1.0");
-  return color;
-}
-@end
-
-@interface ImageCell : PSTableCell {
-  UIImageView *_bgImage;
-  UIImageView *_avatar;
-  UIImageView *_indicator;
-}
-@end
-
-@implementation ImageCell
-- (id)initWithStyle:(int)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
-  self = [super initWithStyle:style reuseIdentifier:reuseIdentifier specifier:specifier];
-
-  if (self) {
-    // Add background image
-    self.backgroundColor = [UIColor clearColor];
-    int type = [[specifier propertyForKey:@"type"] intValue];
-    _bgImage = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/preview.jpg"]];
-    _bgImage.frame = self.contentView.bounds;
-    _bgImage.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    _bgImage.contentMode = UIViewContentModeScaleAspectFit;
-    [self.contentView addSubview:_bgImage];
-
-    // Add avatar
-    _avatar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/ContactImage.png"]];
-    _avatar.frame = CGRectMake(28, 10, 45, 45);
-    [self.contentView addSubview:_avatar];
-
-    // Add title
-    [self setLabelWithType:type];
-
-    // Add colored indicator depending on type
-    [self setIndicatorWithType:type];
-
-    self.imageView.hidden = YES;
-    self.textLabel.hidden = YES;
-    self.detailTextLabel.hidden = YES;
-  }
-
-  return self;
-}
-- (instancetype)initWithSpecifier:(PSSpecifier *)specifier {
-  return [self initWithStyle:UITableViewCellStyleDefault reuseIdentifier:nil specifier:specifier];
-}
-
-- (CGFloat)preferredHeightForWidth:(CGFloat)width {
-  return _bgImage.image.size.height;
-}
-
-- (void)setLabelWithType:(int)type {
-  UILabel *_label = [[UILabel alloc] initWithFrame:CGRectMake(85, 27, 200, 15)];
-  _label.backgroundColor = [UIColor clearColor];
-  _label.textAlignment = UITextAlignmentLeft;
-  _label.textColor = [UIColor grayColor];
-  [_label setFont:[UIFont systemFontOfSize:13]];
-  if (type == 1) {
-    _label.text = @"Indicator Dot Preview";
-  } else if (type == 2) {
-    _label.text = @"Avatar Glow Preview";
-  } else if (type == 3) {
-    _label.text = @"Avatar Border Preview";
-  } else {
-    _label.text = @"Normal Preview";
-  }
-  [self.contentView addSubview:_label];
-}
-
-- (void)setIndicatorWithType:(int)type {
-  NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:prefPath];
-  UIColor *indicatorColor = LCPParseColorString(prefs[@"color"], @"#A98545:1.0");
-
-  if (_indicator) {
-    [_indicator removeFromSuperview];
-  }
-
-  if (type == 1) {
-    int radius = 5;
-    UIGraphicsBeginImageContextWithOptions(
-      CGSizeMake(
-        radius * 2,
-        radius * 2
-      ),
-      NO,
-      0.0f
-    );
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSaveGState(ctx);
-
-    CGRect rect = CGRectMake(0, 0, radius * 2, radius * 2);
-    CGContextSetFillColorWithColor(ctx, indicatorColor.CGColor);
-    CGContextFillEllipseInRect(ctx, rect);
-
-    CGContextRestoreGState(ctx);
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-
-    _indicator = [[UIImageView alloc] initWithImage:img];
-
-    // Adjust margins
-    _indicator.frame = CGRectMake(
-      16 - radius,
-      53 - radius,
-      radius*2,
-      radius*2
-    );
-    [self.contentView addSubview:_indicator];
-  } else if (type == 2) {
-    _avatar.layer.shadowColor = indicatorColor.CGColor;
-    _avatar.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
-    _avatar.layer.shadowRadius = (CGFloat)[prefs[@"radius"] intValue];
-    _avatar.layer.shadowOpacity = 1.0f;
-  } else if (type == 3) {
-    int borderRadius = [prefs[@"radius"] intValue];
-
-    UIGraphicsBeginImageContextWithOptions(
-      CGSizeMake(
-        _avatar.frame.size.width+borderRadius*2,
-        _avatar.frame.size.height+borderRadius*2
-      ),
-      NO,
-      0.0f
-    );
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSaveGState(ctx);
-
-    CGRect rect = CGRectMake(0, 0, _avatar.frame.size.width+borderRadius*2, _avatar.frame.size.height+borderRadius*2);
-    CGContextSetFillColorWithColor(ctx, indicatorColor.CGColor);
-    CGContextFillEllipseInRect(ctx, rect);
-
-    CGContextRestoreGState(ctx);
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-
-    _indicator = [[UIImageView alloc] initWithImage:img];
-
-    // Adjust margins
-    _indicator.frame = CGRectMake(
-      _avatar.frame.origin.x-borderRadius,
-      _avatar.frame.origin.y-borderRadius,
-      _avatar.frame.size.width+borderRadius*2,
-      _avatar.frame.size.height+borderRadius*2
-    );
-
-    // Add as subview
-    [self.contentView addSubview:_indicator];
-    [self.contentView bringSubviewToFront:_avatar];
-  }
-}
-
-- (void)dealloc {
-  [_bgImage release];
-  [_avatar release];
-  [super dealloc];
-}
-@end
+#import "MercuryPrefs.h"
 
 @interface MercuryListController: PSListController {
   NSMutableDictionary *prefs;
@@ -183,17 +7,17 @@ typedef BOOL (^ Evaluator)(UIView *);
 }
 @end
 
+// Get the default parameters
 static NSMutableDictionary *getDefaults() {
   NSMutableDictionary *prefs = [[NSMutableDictionary alloc] init];
-
-  [prefs setValue:@1 forKey:@"type"];
-  [prefs setValue:@"#A98545:1.0" forKey:@"color"];
-  [prefs setValue:@"3" forKey:@"radius"];
-  [prefs setValue:@NO forKey:@"groups"];
-
+  [prefs setValue:kTypeDefault forKey:kTypeKey];
+  [prefs setValue:kColorDefault forKey:kColorKey];
+  [prefs setValue:kRadiusDefault forKey:kRadiusKey];
+  [prefs setValue:kGroupsDefault forKey:kGroupsKey];
   return prefs;
 }
 
+// Searches through subviews recursively with custom evaluation block syntax
 static UIView *searchSubviews(UIView *view, Evaluator search) {
   if (search(view)) {
     return view;
@@ -210,26 +34,30 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 
 @implementation MercuryListController
 - (void)viewDidLoad {
-  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:prefPath];
+  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
   if (prefs == nil) {
     prefs = getDefaults();
   }
 
-  [prefs writeToFile:prefPath atomically:YES];
-  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:prefPath]; // prevents weird crash on saving for the first time
+  [prefs writeToFile:kPrefPath atomically:YES];
+  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath]; // prevents weird crash on saving for the first time
 
   [super viewDidLoad];
 }
+
 - (void)configureTextView {
+  // Find text field
   textField = (UITextField *)searchSubviews(self.view, ^(UIView *view) {
     return [view isKindOfClass:[UITextField class]];
   });
 
+  // Set up keyboard for numbers
   textField.textAlignment = NSTextAlignmentRight;
   textField.keyboardType = UIKeyboardTypeNumberPad;
   textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
   textField.autocorrectionType = UITextAutocorrectionTypeNo;
   
+  // Add done button to keyboard popup
   UIToolbar *toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0,[UIScreen mainScreen].bounds.size.width, 50)];
   toolbar.items = [NSArray arrayWithObjects:
     [[UIBarButtonItem alloc]initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil],
@@ -238,32 +66,28 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
   [toolbar sizeToFit];
   textField.inputAccessoryView = toolbar;
 }
+
 - (void)resign {
-  if (textField) {
-    [textField resignFirstResponder];
-  }
+  if (textField) { [textField resignFirstResponder]; }
 }
+
 - (void)reloadSpecifiers {
   [super reloadSpecifiers];
-
-  // Set up text edit :D
   [self configureTextView];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
   [super viewDidAppear:animated];
-
   [self configureTextView];
 }
 
 - (id)specifiers {
-  NSLog(@"specifiers");
 	if (_specifiers == nil) {
     NSMutableArray *specs = [NSMutableArray array];
+    prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
+    int type = [prefs[kTypeKey] intValue];
 
-    prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:prefPath];
-
-    PSSpecifier* group = [PSSpecifier preferenceSpecifierNamed:@"Indicator Type"
+    PSSpecifier* group = [PSSpecifier preferenceSpecifierNamed:@"Indicator Settings"
                           target:self
                              set:NULL
                              get:NULL
@@ -272,61 +96,70 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
                             edit:Nil];
     [specs addObject:group];
     
-    PSSpecifier* spec = [PSSpecifier preferenceSpecifierNamed:@"Type"
+    // Indicator Type
+    PSSpecifier* indicatorType = [PSSpecifier preferenceSpecifierNamed:@"Type"
             target:self
                set:@selector(setPreferenceValue:specifier:)
                get:@selector(readPreferenceValue:)
             detail:Nil
               cell:PSSegmentCell
               edit:Nil];
-    [spec setValues:@[@0, @1, @2, @3] titles:@[@"None", @"Dot", @"Glow", @"Border"]];
-    [specs addObject:spec];
+    [indicatorType setValues:@[@0, @1, @2, @3] titles:@[@"None", @"Dot", @"Glow", @"Border"]];
+    [specs addObject:indicatorType];
 
-    PSSpecifier *preview = [PSSpecifier preferenceSpecifierNamed:prefs[@"color"]
+    // Indicator Preview
+    PSSpecifier *indicatorPreview = [PSSpecifier preferenceSpecifierNamed:@"Preview"
                            target:self
                               set:NULL
                               get:NULL
                            detail:Nil
                              cell:PSStaticTextCell
                              edit:Nil];
-    [preview setProperty:[ImageCell class] forKey:@"cellClass"];
-    [preview setProperty:[NSString stringWithFormat:@"%d", (int)([UIScreen mainScreen].bounds.size.width * 0.18)] forKey:@"height"];
-    [preview setProperty:prefs[@"type"] forKey:@"type"];
-    [specs addObject:preview];
+    [indicatorPreview setProperty:[ImagePreviewCell class] forKey:@"cellClass"];
+    [indicatorPreview setProperty:[NSString stringWithFormat:@"%d", (int)([UIScreen mainScreen].bounds.size.width * 0.18)] forKey:@"height"];
+    [indicatorPreview setProperty:prefs[kTypeKey] forKey:kTypeKey];
+    [specs addObject:indicatorPreview];
 
-    // Add the colors
-    PSSpecifier *colorPicker = [PSSpecifier preferenceSpecifierNamed:@"Indicator Color"
-                           target:self
-                              set:nil
-                              get:nil
-                           detail:Nil
-                             cell:PSButtonCell
-                             edit:Nil];
-    [colorPicker setProperty:[ColorPicker class] forKey:@"cellClass"];
-    [colorPicker setButtonAction:@selector(chooseColor:)];
-    [specs addObject:colorPicker];
+    // If it's not None
+    if (type != 0) {
+      // Color picker
+      PSSpecifier *colorPicker = [PSSpecifier preferenceSpecifierNamed:@"Indicator Color"
+                             target:self
+                                set:nil
+                                get:nil
+                             detail:Nil
+                               cell:PSButtonCell
+                               edit:Nil];
+      [colorPicker setProperty:[ColorPicker class] forKey:@"cellClass"];
+      [colorPicker setButtonAction:@selector(chooseColor:)];
+      [specs addObject:colorPicker];
 
-    // Add the radius
-    radius = [PSSpecifier preferenceSpecifierNamed:@"Radius"
-                           target:self
-                              set:@selector(setPreferenceValue:specifier:)
-                              get:@selector(readPreferenceValue:)
-                           detail:Nil
-                             cell:PSEditTextCell
-                             edit:Nil];
-    [specs addObject:radius];
+      // If it's not Dot
+      if (type != 1) {
+        // Radius picker
+        radius = [PSSpecifier preferenceSpecifierNamed:@"Radius"
+                               target:self
+                                  set:@selector(setPreferenceValue:specifier:)
+                                  get:@selector(readPreferenceValue:)
+                               detail:Nil
+                                 cell:PSEditTextCell
+                                 edit:Nil];
+        [specs addObject:radius];
+      }
 
-    PSSpecifier *groups = [PSSpecifier preferenceSpecifierNamed:@"Enabled for Group Conversations"
-                           target:self
-                              set:@selector(setPreferenceValue:specifier:)
-                              get:@selector(readPreferenceValue:)
-                           detail:Nil
-                             cell:PSSwitchCell
-                             edit:Nil];
-    [groups setProperty:@([prefs[@"type"] intValue] != 3) forKey:@"enabled"];
-    [specs addObject:groups];
+      // Enable for groups
+      PSSpecifier *groups = [PSSpecifier preferenceSpecifierNamed:@"Enabled for Group Conversations"
+                             target:self
+                                set:@selector(setPreferenceValue:specifier:)
+                                get:@selector(readPreferenceValue:)
+                             detail:Nil
+                               cell:PSSwitchCell
+                               edit:Nil];
+      [groups setProperty:@([prefs[kTypeKey] intValue] != 3) forKey:@"enabled"];
+      [specs addObject:groups];
+    }
 
-    //initialize about
+    // About section
     group = [PSSpecifier preferenceSpecifierNamed:@"About"
              target:self
                 set:NULL
@@ -369,7 +202,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
     [button setProperty:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/mail.png"] forKey:@"iconImage"];
     [specs addObject:button];
 
-    // Get the current year
+    // Year footer
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"yyyy"];
     NSString *yearString = [formatter stringFromDate:[NSDate date]];
@@ -389,18 +222,17 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 }
 
 -(void)chooseColor:(PSSpecifier*)specifier {
-  NSString *readFromKey = prefs[@"color"]; //  (You want to load from prefs probably)
-  NSString *fallbackHex = @"#A98545:1.0";  // (You want to load from prefs probably)
+  NSString *readFromKey = prefs[kColorKey];
 
-  UIColor *startColor = LCPParseColorString(readFromKey, fallbackHex); // this color will be used at startup
+  UIColor *startColor = LCPParseColorString(readFromKey, kColorDefault);
   PFColorAlert *alert = [PFColorAlert colorAlertWithStartColor:startColor showAlpha:YES];
 
   [alert displayWithCompletion: ^void (UIColor *pickedColor) {
     NSString *hexString = [UIColor hexFromColor:pickedColor];
     hexString = [hexString stringByAppendingFormat:@":%f", pickedColor.alpha];
 
-    [prefs setValue:hexString forKey:@"color"];
-    [prefs writeToFile:prefPath atomically:YES];
+    [prefs setValue:hexString forKey:kColorKey];
+    [prefs writeToFile:kPrefPath atomically:YES];
 
     [self reloadSpecifiers];
     [self killMessages]; 
@@ -408,27 +240,27 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 }
 
 -(id)readPreferenceValue:(PSSpecifier*)specifier {
-  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:prefPath];
+  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
   if ([[specifier name] isEqualToString:@"Type"]) {
-    return prefs[@"type"];
+    return prefs[kTypeKey];
   } else if ([[specifier name] isEqualToString:@"Enabled for Group Conversations"]) {
-    return [prefs[@"type"] intValue] != 3 ? prefs[@"groups"] : @NO;
+    return [prefs[kTypeKey] intValue] != 3 ? prefs[kGroupsKey] : @NO;
   } else if ([[specifier name] isEqualToString:@"Radius"]) {
-    return prefs[@"radius"];
+    return prefs[kRadiusKey];
   }
   return nil;
 }
 
 -(void)setPreferenceValue:(id)value specifier:(PSSpecifier*)specifier {
-  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:prefPath];
+  prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
   if ([[specifier name] isEqualToString:@"Type"]) {
-    [prefs setValue:value forKey:@"type"];
+    [prefs setValue:value forKey:kTypeKey];
   } else if ([[specifier name] isEqualToString:@"Enabled for Group Conversations"]) {
-    [prefs setValue:value forKey:@"groups"];
+    [prefs setValue:value forKey:kGroupsKey];
   } else if ([[specifier name] isEqualToString:@"Radius"]) {
-    [prefs setValue:value forKey:@"radius"];
+    [prefs setValue:value forKey:kRadiusKey];
   }
-  [prefs writeToFile:prefPath atomically:YES];
+  [prefs writeToFile:kPrefPath atomically:YES];
   [self reloadSpecifiers];
   [self killMessages];
 }

@@ -1,4 +1,5 @@
-#include <UIKit/UIKit.h>
+#import <UIKit/UIKit.h>
+#import "constants.h"
 
 // IMCore
 @interface IMMessage : NSObject
