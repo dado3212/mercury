@@ -6,7 +6,7 @@
 static char INDICATOR_KEY;
 
 // Get the default parameters
-static NSMutableDictionary *getDefaults() {
+static NSMutableDictionary* getDefaults() {
   NSMutableDictionary *prefs = [[NSMutableDictionary alloc] init];
   [prefs setValue:kTypeDefault forKey:kTypeKey];
   [prefs setValue:kColorDefault forKey:kColorKey];
@@ -28,6 +28,30 @@ static UIImageView* getIndicator(UIView *view) {
   return nil;
 }
 
+// Create a UIImageView circle with given radius and color
+static UIImageView* makeCircle(int radius, UIColor *color) {
+  UIGraphicsBeginImageContextWithOptions(
+    CGSizeMake(
+      radius,
+      radius
+    ),
+    NO,
+    0.0f
+  );
+  CGContextRef ctx = UIGraphicsGetCurrentContext();
+  CGContextSaveGState(ctx);
+
+  CGRect rect = CGRectMake(0, 0, radius, radius);
+  CGContextSetFillColorWithColor(ctx, color.CGColor);
+  CGContextFillEllipseInRect(ctx, rect);
+
+  CGContextRestoreGState(ctx);
+  UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
+  UIGraphicsEndImageContext();
+
+  return [[UIImageView alloc] initWithImage:img];
+}
+
 %hook CKConversationListCell
 -(void)layoutSubviews {
   // Load preferences
@@ -46,6 +70,21 @@ static UIImageView* getIndicator(UIView *view) {
     )
   );
 
+  // Check from cache, limit only if could change needsResponse
+  if (needsResponse) {
+    NSString *messageGuid = [[[[self conversation] chat] lastFinishedMessage] guid];
+    NSString *chatGuid = [[self conversation] groupID];
+    NSMutableDictionary *cached = [[NSMutableDictionary alloc] initWithContentsOfFile:kClearedPath];
+    // If it needs response but the most recent is saved in the cleared caching, then don't show indicator
+    if ([cached[chatGuid] isEqualToString:messageGuid]) {
+      needsResponse = false;
+    } else {
+      // If it's been updated, save space by removing the chat from the array
+      [cached removeObjectForKey:chatGuid];
+      [cached writeToFile:kClearedPath atomically:YES];
+    }
+  }
+
   // Layout all of the other subviews
   %orig;
 
@@ -55,25 +94,21 @@ static UIImageView* getIndicator(UIView *view) {
 
     // If no indicator, then add it
     if (currentIndicator == nil) {
-      UIImageView *newIndicator;
-
       // Get the "unresponded to" blue indicator
       UIImageView *indicator = MSHookIvar<UIImageView*>(self, "_unreadIndicatorImageView");
 
-      // Copy it
-      NSData *archive = [NSKeyedArchiver archivedDataWithRootObject:indicator];
-      newIndicator = [NSKeyedUnarchiver unarchiveObjectWithData:archive];
-
-      // Tint it
-      newIndicator.image = [newIndicator.image imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
-      [newIndicator setTintColor:indicatorColor];
+      // Create with the same radius
+      UIImageView *newIndicator = makeCircle(
+        indicator.frame.size.width,
+        indicatorColor
+      );
 
       // Adjust margins
       newIndicator.frame = CGRectMake(
-        newIndicator.frame.origin.x,
-        newIndicator.frame.origin.y + 20,
-        newIndicator.frame.size.width,
-        newIndicator.frame.size.height
+        indicator.frame.origin.x,
+        indicator.frame.origin.y + 20,
+        indicator.frame.size.width,
+        indicator.frame.size.height
       );
 
       // Set flag
@@ -114,31 +149,13 @@ static UIImageView* getIndicator(UIView *view) {
 
     // If no indicator, then add it
     if (currentIndicator == nil) {
-      UIImageView *newIndicator;
-
       // Get the "unresponded to" blue indicator
       CKAvatarView *avatarView = [self avatarView];
 
-      UIGraphicsBeginImageContextWithOptions(
-        CGSizeMake(
-          avatarView.frame.size.width+borderRadius*2,
-          avatarView.frame.size.height+borderRadius*2
-        ),
-        NO,
-        0.0f
+      UIImageView *newIndicator = makeCircle(
+        avatarView.frame.size.width + borderRadius * 2,
+        indicatorColor
       );
-      CGContextRef ctx = UIGraphicsGetCurrentContext();
-      CGContextSaveGState(ctx);
-
-      CGRect rect = CGRectMake(0, 0, avatarView.frame.size.width+borderRadius*2, avatarView.frame.size.height+borderRadius*2);
-      CGContextSetFillColorWithColor(ctx, indicatorColor.CGColor);
-      CGContextFillEllipseInRect(ctx, rect);
-
-      CGContextRestoreGState(ctx);
-      UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-      UIGraphicsEndImageContext();
-
-      newIndicator = [[UIImageView alloc] initWithImage:img];
 
       // Adjust margins
       newIndicator.frame = CGRectMake(
@@ -169,6 +186,56 @@ static UIImageView* getIndicator(UIView *view) {
       [currentIndicator setHidden:true];
     }
   }
+}
+
+-(id)initWithStyle:(long long)arg1 reuseIdentifier:(id)arg2 {
+  self = %orig;
+  [self addLongPressRecognizer];
+  return self;
+}
+
+%new
+- (void)addLongPressRecognizer {
+  UILongPressGestureRecognizer *recognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
+  recognizer.minimumPressDuration = 0.25;
+  [self addGestureRecognizer:recognizer];
+  self.userInteractionEnabled = YES;
+}
+
+%new
+- (void)didLongPress:(UILongPressGestureRecognizer *)recognizer {
+  if (recognizer.state != UIGestureRecognizerStateBegan) { return; }
+  // Create sheet popup
+  UIAlertController* alert = [UIAlertController alertControllerWithTitle:nil
+    message:nil
+    preferredStyle:UIAlertControllerStyleActionSheet];
+
+  UIAlertAction* cancelButton = [UIAlertAction actionWithTitle:@"Cancel"
+    style:UIAlertActionStyleCancel
+    handler:^(UIAlertAction * action) {}];
+
+  UIAlertAction* clearIndicator = [UIAlertAction actionWithTitle:@"Clear Indicator"
+    style:UIAlertActionStyleDefault
+    handler:^(UIAlertAction * action) {
+      // Saves the ID for the most recent message in the chat
+      NSString *messageGuid = [[[[self conversation] chat] lastFinishedMessage] guid];
+      NSString *chatGuid = [[self conversation] groupID];
+      NSMutableDictionary *cached = [[NSMutableDictionary alloc] initWithContentsOfFile:kClearedPath];
+      if (cached == nil) {
+        cached = [[NSMutableDictionary alloc] init];
+      }
+      cached[chatGuid] = messageGuid;
+      [cached writeToFile:kClearedPath atomically:YES];
+
+      UIImageView *currentIndicator = getIndicator(self.contentView);
+      [currentIndicator setHidden:true];
+    }];
+
+  [alert addAction:cancelButton];
+  [alert addAction:clearIndicator];
+
+  UIViewController* parent = [UIApplication sharedApplication].keyWindow.rootViewController;
+  [parent presentViewController:alert animated:YES completion:nil];
 }
 
 %end

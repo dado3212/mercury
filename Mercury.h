@@ -3,6 +3,7 @@
 
 // IMCore
 @interface IMMessage : NSObject
+-(NSString *)guid;
 -(BOOL)isFromMe;
 @end
 
@@ -20,6 +21,7 @@
 @interface CKConversation : NSObject
 -(IMChat *)chat;
 -(BOOL)isGroupConversation;
+-(NSString *)groupID;
 @end
 
 @interface CKAvatarView : UIView
@@ -27,6 +29,7 @@
 @end
 
 @interface CKConversationListCell : UITableViewCell
+-(void)addLongPressRecognizer;
 -(CKAvatarView *)avatarView;
 -(CKConversation *)conversation;
 @end

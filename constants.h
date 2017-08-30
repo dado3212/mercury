@@ -1,4 +1,5 @@
 #define kPrefPath @"/var/mobile/Library/Preferences/com.hackingdartmouth.mercury.plist"
+#define kClearedPath @"/var/mobile/Library/Preferences/com.hackingdartmouth.mercury.cleared.path"
 
 #define kColorKey @"color"
 #define kColorDefault @"#A98545:1.0"
