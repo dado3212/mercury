@@ -76,12 +76,14 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
     NSString *chatGuid = [[self conversation] groupID];
     NSMutableDictionary *cached = [[NSMutableDictionary alloc] initWithContentsOfFile:kClearedPath];
     // If it needs response but the most recent is saved in the cleared caching, then don't show indicator
-    if ([cached[chatGuid] isEqualToString:messageGuid]) {
-      needsResponse = false;
-    } else {
-      // If it's been updated, save space by removing the chat from the array
-      [cached removeObjectForKey:chatGuid];
-      [cached writeToFile:kClearedPath atomically:YES];
+    if (cached && cached[chatGuid]) {
+      if ([cached[chatGuid] isEqualToString:messageGuid]) {
+        needsResponse = false;
+      } else {
+        // If it's been updated, save space by removing the chat from the array
+        [cached removeObjectForKey:chatGuid];
+        [cached writeToFile:kClearedPath atomically:YES];
+      }
     }
   }
 
