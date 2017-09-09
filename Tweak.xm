@@ -198,6 +198,14 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
 
 %new
 - (void)addLongPressRecognizer {
+  // Remove all other long press recognizers
+  NSArray *gestureRecognizers = [self gestureRecognizers];
+  for (UIGestureRecognizer *recognizer in gestureRecognizers) {
+    if ([recognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
+      [self removeGestureRecognizer:recognizer];
+    }
+  }
+  // Add my own recognizer
   UILongPressGestureRecognizer *recognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
   recognizer.minimumPressDuration = 0.25;
   [self addGestureRecognizer:recognizer];
