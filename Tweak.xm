@@ -15,19 +15,6 @@ static NSMutableDictionary* getDefaults() {
   return prefs;
 }
 
-// Search immediate subviews for indicator
-static UIImageView* getIndicator(UIView *view) {
-  for (UIView *subview in [view subviews]) {
-    if ([subview isKindOfClass:[UIImageView class]]) {
-      NSNumber *isIndicatorBool = objc_getAssociatedObject(subview, &INDICATOR_KEY);
-      if (isIndicatorBool.boolValue) {
-        return (UIImageView *)subview;
-      }
-    }
-  }
-  return nil;
-}
-
 // Create a UIImageView circle with given radius and color
 static UIImageView* makeCircle(int radius, UIColor *color) {
   UIGraphicsBeginImageContextWithOptions(
@@ -59,9 +46,15 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
   if (!prefs) {
     prefs = getDefaults();
   }
-  UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault); 
   int style = [prefs[kTypeKey] intValue];
 
+  // Layout all of the other subviews
+  %orig;
+
+  // No need to do anything
+  if (style == 0) { return; }
+
+  UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault); 
   bool needsResponse = (
     ![[[[self conversation] chat] lastFinishedMessage] isFromMe] &&
     (
@@ -87,43 +80,61 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
     }
   }
 
-  // Layout all of the other subviews
-  %orig;
-
-  if (style == 1) {
+  if (style == 1 || style == 3) {
     // Get current indicator
-    UIImageView *currentIndicator = getIndicator(self.contentView);
+    UIImageView *currentIndicator = [self getIndicator];
 
     // If no indicator, then add it
     if (currentIndicator == nil) {
-      // Get the "unresponded to" blue indicator
-      UIImageView *indicator = MSHookIvar<UIImageView*>(self, "_unreadIndicatorImageView");
+      if (style == 1) {
+        // Get the "unresponded to" blue indicator
+        UIImageView *indicator = MSHookIvar<UIImageView*>(self, "_unreadIndicatorImageView");
 
-      // Create with the same radius
-      UIImageView *newIndicator = makeCircle(
-        indicator.frame.size.width,
-        indicatorColor
-      );
+        // Create with the same radius
+        UIImageView *newIndicator = makeCircle(
+          indicator.frame.size.width,
+          indicatorColor
+        );
 
-      // Adjust margins
-      newIndicator.frame = CGRectMake(
-        indicator.frame.origin.x,
-        indicator.frame.origin.y + 20,
-        indicator.frame.size.width,
-        indicator.frame.size.height
-      );
+        // Adjust margins
+        newIndicator.frame = CGRectMake(
+          indicator.frame.origin.x,
+          indicator.frame.origin.y + 20,
+          indicator.frame.size.width,
+          indicator.frame.size.height
+        );
 
-      // Set flag
-      objc_setAssociatedObject(
-        newIndicator,
-        &INDICATOR_KEY,
-        [NSNumber numberWithBool:true],
-        OBJC_ASSOCIATION_RETAIN_NONATOMIC
-      );
+        [self setIndicator:newIndicator];
 
-      // Add as subview
-      [self.contentView addSubview:newIndicator];
-      currentIndicator = newIndicator;
+        // Add as subview
+        [self.contentView addSubview:newIndicator];
+        currentIndicator = newIndicator;
+      } else {
+        int borderRadius = [prefs[kRadiusKey] intValue];
+
+        // Get the avatar view
+        CKAvatarView *avatarView = [self avatarView];
+
+        UIImageView *newIndicator = makeCircle(
+          avatarView.frame.size.width + borderRadius * 2,
+          indicatorColor
+        );
+
+        // Adjust margins
+        newIndicator.frame = CGRectMake(
+          avatarView.frame.origin.x-borderRadius,
+          avatarView.frame.origin.y-borderRadius,
+          avatarView.frame.size.width+borderRadius*2,
+          avatarView.frame.size.height+borderRadius*2
+        );
+
+        [self setIndicator:newIndicator];
+
+        // Add as subview
+        [self.contentView addSubview:newIndicator];
+        [self.contentView bringSubviewToFront:avatarView];
+        currentIndicator = newIndicator;
+      }
     }
 
     // Conditionally make indicator visible
@@ -143,50 +154,6 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
     } else {
       avatarView.layer.shadowOpacity = 0.0f;
     }
-  } else if (style == 3) {
-    int borderRadius = [prefs[kRadiusKey] intValue];
-
-    // Requires group indicators to be turned off
-    UIImageView *currentIndicator = getIndicator(self.contentView);
-
-    // If no indicator, then add it
-    if (currentIndicator == nil) {
-      // Get the "unresponded to" blue indicator
-      CKAvatarView *avatarView = [self avatarView];
-
-      UIImageView *newIndicator = makeCircle(
-        avatarView.frame.size.width + borderRadius * 2,
-        indicatorColor
-      );
-
-      // Adjust margins
-      newIndicator.frame = CGRectMake(
-        avatarView.frame.origin.x-borderRadius,
-        avatarView.frame.origin.y-borderRadius,
-        avatarView.frame.size.width+borderRadius*2,
-        avatarView.frame.size.height+borderRadius*2
-      );
-
-      // Set flag
-      objc_setAssociatedObject(
-        newIndicator,
-        &INDICATOR_KEY,
-        [NSNumber numberWithBool:true],
-        OBJC_ASSOCIATION_RETAIN_NONATOMIC
-      );
-
-      // Add as subview
-      [self.contentView addSubview:newIndicator];
-      [self.contentView bringSubviewToFront:avatarView];
-      currentIndicator = newIndicator;
-    }
-
-    // Conditionally make indicator visible
-    if (needsResponse) {
-      [currentIndicator setHidden:false];
-    } else {
-      [currentIndicator setHidden:true];
-    }
   }
 }
 
@@ -194,6 +161,25 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
   self = %orig;
   [self addLongPressRecognizer];
   return self;
+}
+
+%new
+- (void)setIndicator:(UIImageView *)indicator {
+  objc_setAssociatedObject(
+    self,
+    &INDICATOR_KEY,
+    indicator,
+    OBJC_ASSOCIATION_RETAIN_NONATOMIC
+  );
+}
+
+%new
+- (UIImageView *)getIndicator {
+  id view = objc_getAssociatedObject(self, &INDICATOR_KEY);
+  if ([view isKindOfClass:[UIImageView class]]) {
+    return (UIImageView *)view;
+  }
+  return nil;
 }
 
 %new
@@ -237,7 +223,7 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
       cached[chatGuid] = messageGuid;
       [cached writeToFile:kClearedPath atomically:YES];
 
-      UIImageView *currentIndicator = getIndicator(self.contentView);
+      UIImageView *currentIndicator = [self getIndicator];
       [currentIndicator setHidden:true];
     }];
 
