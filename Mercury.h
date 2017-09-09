@@ -29,7 +29,10 @@
 @end
 
 @interface CKConversationListCell : UITableViewCell
--(void)addLongPressRecognizer;
 -(CKAvatarView *)avatarView;
 -(CKConversation *)conversation;
+
+-(void)addLongPressRecognizer;
+-(UIImageView *)getIndicator;
+-(void)setIndicator:(UIImageView *)indicator;
 @end
