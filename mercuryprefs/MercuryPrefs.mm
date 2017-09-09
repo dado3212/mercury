@@ -1,4 +1,5 @@
 #import "MercuryPrefs.h"
+#import "../Utils.h"
 
 @interface MercuryListController: PSListController {
   NSMutableDictionary *prefs;
@@ -6,16 +7,6 @@
   UITextField *textField;
 }
 @end
-
-// Get the default parameters
-static NSMutableDictionary *getDefaults() {
-  NSMutableDictionary *prefs = [[NSMutableDictionary alloc] init];
-  [prefs setValue:kTypeDefault forKey:kTypeKey];
-  [prefs setValue:kColorDefault forKey:kColorKey];
-  [prefs setValue:kRadiusDefault forKey:kRadiusKey];
-  [prefs setValue:kGroupsDefault forKey:kGroupsKey];
-  return prefs;
-}
 
 // Searches through subviews recursively with custom evaluation block syntax
 static UIView *searchSubviews(UIView *view, Evaluator search) {
@@ -36,7 +27,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 - (void)viewDidLoad {
   prefs = [[NSMutableDictionary alloc] initWithContentsOfFile:kPrefPath];
   if (prefs == nil) {
-    prefs = getDefaults();
+    prefs = [Utils getDefaultPrefs];
   }
 
   [prefs writeToFile:kPrefPath atomically:YES];

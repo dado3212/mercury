@@ -1,64 +1,33 @@
 #import "substrate.h"
 #import "Mercury.h"
+#import "Utils.h"
 #import <libcolorpicker.h>
-#import <QuartzCore/QuartzCore.h>
 
 static char INDICATOR_KEY;
-
-// Get the default parameters
-static NSMutableDictionary* getDefaults() {
-  NSMutableDictionary *prefs = [[NSMutableDictionary alloc] init];
-  [prefs setValue:kTypeDefault forKey:kTypeKey];
-  [prefs setValue:kColorDefault forKey:kColorKey];
-  [prefs setValue:kRadiusDefault forKey:kRadiusKey];
-  [prefs setValue:kGroupsDefault forKey:kGroupsKey];
-  return prefs;
-}
-
-// Create a UIImageView circle with given radius and color
-static UIImageView* makeCircle(int radius, UIColor *color) {
-  UIGraphicsBeginImageContextWithOptions(
-    CGSizeMake(
-      radius,
-      radius
-    ),
-    NO,
-    0.0f
-  );
-  CGContextRef ctx = UIGraphicsGetCurrentContext();
-  CGContextSaveGState(ctx);
-
-  CGRect rect = CGRectMake(0, 0, radius, radius);
-  CGContextSetFillColorWithColor(ctx, color.CGColor);
-  CGContextFillEllipseInRect(ctx, rect);
-
-  CGContextRestoreGState(ctx);
-  UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-  UIGraphicsEndImageContext();
-
-  return [[UIImageView alloc] initWithImage:img];
-}
 
 %hook CKConversationListCell
 -(void)layoutSubviews {
   // Load preferences
   NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:kPrefPath];
   if (!prefs) {
-    prefs = getDefaults();
+    prefs = [Utils getDefaultPrefs];
   }
-  int style = [prefs[kTypeKey] intValue];
+  int type = [prefs[kTypeKey] intValue];
 
   // Layout all of the other subviews
   %orig;
 
   // No need to do anything
-  if (style == 0) { return; }
+  if (type == 0) {
+    [prefs release];
+    return;
+  }
 
   UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault); 
   bool needsResponse = (
     ![[[[self conversation] chat] lastFinishedMessage] isFromMe] &&
     (
-      ([prefs[kGroupsKey] boolValue] && style != 3) ||
+      ([prefs[kGroupsKey] boolValue] && type != 3) ||
       ![[self conversation] isGroupConversation]
     )
   );
@@ -78,23 +47,22 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
         [cached writeToFile:kClearedPath atomically:YES];
       }
     }
+    [cached release];
   }
 
-  if (style == 1 || style == 3) {
+  if (type == 1 || type == 3) {
     // Get current indicator
     UIImageView *currentIndicator = [self getIndicator];
 
     // If no indicator, then add it
     if (currentIndicator == nil) {
-      if (style == 1) {
+      UIImageView *newIndicator;
+      if (type == 1) {
         // Get the "unresponded to" blue indicator
         UIImageView *indicator = MSHookIvar<UIImageView*>(self, "_unreadIndicatorImageView");
 
         // Create with the same radius
-        UIImageView *newIndicator = makeCircle(
-          indicator.frame.size.width,
-          indicatorColor
-        );
+        newIndicator = [Utils makeCircle:indicator.frame.size.width withColor:indicatorColor];
 
         // Adjust margins
         newIndicator.frame = CGRectMake(
@@ -104,21 +72,15 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
           indicator.frame.size.height
         );
 
-        [self setIndicator:newIndicator];
-
         // Add as subview
         [self.contentView addSubview:newIndicator];
-        currentIndicator = newIndicator;
       } else {
         int borderRadius = [prefs[kRadiusKey] intValue];
 
         // Get the avatar view
         CKAvatarView *avatarView = [self avatarView];
 
-        UIImageView *newIndicator = makeCircle(
-          avatarView.frame.size.width + borderRadius * 2,
-          indicatorColor
-        );
+        newIndicator = [Utils makeCircle:(avatarView.frame.size.width + borderRadius * 2) withColor:indicatorColor];
 
         // Adjust margins
         newIndicator.frame = CGRectMake(
@@ -128,13 +90,14 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
           avatarView.frame.size.height+borderRadius*2
         );
 
-        [self setIndicator:newIndicator];
-
         // Add as subview
         [self.contentView addSubview:newIndicator];
         [self.contentView bringSubviewToFront:avatarView];
-        currentIndicator = newIndicator;
       }
+
+      [self setIndicator:newIndicator];
+      currentIndicator = newIndicator;
+      [newIndicator release];
     }
 
     // Conditionally make indicator visible
@@ -143,7 +106,7 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
     } else {
       [currentIndicator setHidden:true];
     }
-  } else if (style == 2) {
+  } else if (type == 2) {
     CKAvatarView *avatarView = [self avatarView];
     avatarView.layer.shadowColor = indicatorColor.CGColor;
     avatarView.layer.shadowOffset = CGSizeMake(0.0f, 0.0f);
@@ -155,6 +118,9 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
       avatarView.layer.shadowOpacity = 0.0f;
     }
   }
+
+  [prefs release];
+
 }
 
 -(id)initWithStyle:(long long)arg1 reuseIdentifier:(id)arg2 {
@@ -196,6 +162,8 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
   recognizer.minimumPressDuration = 0.25;
   [self addGestureRecognizer:recognizer];
   self.userInteractionEnabled = YES;
+
+  [recognizer release];
 }
 
 %new
@@ -222,6 +190,7 @@ static UIImageView* makeCircle(int radius, UIColor *color) {
       }
       cached[chatGuid] = messageGuid;
       [cached writeToFile:kClearedPath atomically:YES];
+      [cached release];
 
       UIImageView *currentIndicator = [self getIndicator];
       [currentIndicator setHidden:true];

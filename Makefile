@@ -3,7 +3,7 @@ ARCHS = armv7 armv7s arm64
 include theos/makefiles/common.mk
 
 TWEAK_NAME = Mercury
-Mercury_FILES = Tweak.xm
+Mercury_FILES = Tweak.xm Utils.mm
 Mercury_FRAMEWORKS = UIKit CoreGraphics QuartzCore
 Mercury_PRIVATE_FRAMEWORKS = ChatKit IMCore
 Mercury_LIBRARIES = colorpicker

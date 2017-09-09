@@ -1,4 +1,5 @@
 #import "MercuryPrefs.h"
+#import "../Utils.h"
 
 @implementation ImagePreviewCell
 - (id)initWithStyle:(int)style reuseIdentifier:(NSString *)reuseIdentifier specifier:(PSSpecifier *)specifier {
@@ -57,26 +58,7 @@
 
   if (type == 1) {
     int radius = 5;
-    UIGraphicsBeginImageContextWithOptions(
-      CGSizeMake(
-        radius * 2,
-        radius * 2
-      ),
-      NO,
-      0.0f
-    );
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSaveGState(ctx);
-
-    CGRect rect = CGRectMake(0, 0, radius * 2, radius * 2);
-    CGContextSetFillColorWithColor(ctx, indicatorColor.CGColor);
-    CGContextFillEllipseInRect(ctx, rect);
-
-    CGContextRestoreGState(ctx);
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-
-    _indicator = [[UIImageView alloc] initWithImage:img];
+    _indicator = [Utils makeCircle:(radius * 2) withColor:indicatorColor];
 
     // Adjust margins
     _indicator.frame = CGRectMake(
@@ -95,26 +77,7 @@
   } else if (type == 3) {
     int borderRadius = [prefs[@"radius"] intValue];
 
-    UIGraphicsBeginImageContextWithOptions(
-      CGSizeMake(
-        _avatar.frame.size.width+borderRadius*2,
-        _avatar.frame.size.height+borderRadius*2
-      ),
-      NO,
-      0.0f
-    );
-    CGContextRef ctx = UIGraphicsGetCurrentContext();
-    CGContextSaveGState(ctx);
-
-    CGRect rect = CGRectMake(0, 0, _avatar.frame.size.width+borderRadius*2, _avatar.frame.size.height+borderRadius*2);
-    CGContextSetFillColorWithColor(ctx, indicatorColor.CGColor);
-    CGContextFillEllipseInRect(ctx, rect);
-
-    CGContextRestoreGState(ctx);
-    UIImage *img = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-
-    _indicator = [[UIImageView alloc] initWithImage:img];
+    _indicator = [Utils makeCircle:(_avatar.frame.size.width+borderRadius*2) withColor:indicatorColor];
 
     // Adjust margins
     _indicator.frame = CGRectMake(
@@ -129,6 +92,7 @@
     [self.contentView bringSubviewToFront:_avatar];
     [_indicator release];
   }
+  [prefs release];
 }
 
 - (void)dealloc {

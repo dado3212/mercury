@@ -4,7 +4,6 @@
 #import <libcolorpicker.h>
 #import <substrate.h>
 #import <UIKit/UIKit.h>
-#import <QuartzCore/QuartzCore.h>
 #import "../constants.h"
 
 typedef BOOL (^ Evaluator)(UIView *);
