@@ -64,13 +64,24 @@ static char INDICATOR_KEY;
         // Create with the same radius
         newIndicator = [Utils makeCircle:indicator.frame.size.width withColor:indicatorColor];
 
+        CGRect indicatorFrame = [[CKConversationListCellLayout sharedInstance] unreadFrame];
+
         // Adjust margins
-        newIndicator.frame = CGRectMake(
-          indicator.frame.origin.x,
-          indicator.frame.origin.y + 20,
-          indicator.frame.size.width,
-          indicator.frame.size.height
-        );
+        if (indicatorFrame.origin.x != 0) {
+          newIndicator.frame = CGRectMake(
+            indicatorFrame.origin.x,
+            indicatorFrame.origin.y + 20,
+            indicatorFrame.size.width,
+            indicatorFrame.size.height
+          );
+        } else {
+          newIndicator.frame = CGRectMake(
+            8,
+            33.33 + 20,
+            12,
+            12
+          );
+        }
 
         // Add as subview
         [self.contentView addSubview:newIndicator];
@@ -83,12 +94,21 @@ static char INDICATOR_KEY;
         newIndicator = [Utils makeCircle:(avatarView.frame.size.width + borderRadius * 2) withColor:indicatorColor];
 
         // Adjust margins
-        newIndicator.frame = CGRectMake(
-          avatarView.frame.origin.x-borderRadius,
-          avatarView.frame.origin.y-borderRadius,
-          avatarView.frame.size.width+borderRadius*2,
-          avatarView.frame.size.height+borderRadius*2
-        );
+        if (avatarView.frame.origin.x == 0) {
+          newIndicator.frame = CGRectMake(
+            26 - borderRadius,
+            16 - borderRadius,
+            avatarView.frame.size.width+borderRadius*2,
+            avatarView.frame.size.height+borderRadius*2
+          );
+        } else {
+          newIndicator.frame = CGRectMake(
+            avatarView.frame.origin.x-borderRadius,
+            avatarView.frame.origin.y-borderRadius,
+            avatarView.frame.size.width+borderRadius*2,
+            avatarView.frame.size.height+borderRadius*2
+          );
+        }
 
         // Add as subview
         [self.contentView addSubview:newIndicator];
@@ -98,6 +118,22 @@ static char INDICATOR_KEY;
       [self setIndicator:newIndicator];
       currentIndicator = newIndicator;
       [newIndicator release];
+    } else if (type == 3) {
+      int borderRadius = [prefs[kRadiusKey] intValue];
+
+      // Get the avatar view
+      CKAvatarView *avatarView = [self avatarView];
+
+      // Update the dimensions if they're wrong
+      if (avatarView.frame.origin.x != 0 && avatarView.frame.origin.x - borderRadius != currentIndicator.frame.origin.x) {
+        currentIndicator.frame = CGRectMake(
+          avatarView.frame.origin.x-borderRadius,
+          avatarView.frame.origin.y-borderRadius,
+          avatarView.frame.size.width+borderRadius*2,
+          avatarView.frame.size.height+borderRadius*2
+        );
+        [currentIndicator layoutIfNeeded];
+      }
     }
 
     // Conditionally make indicator visible
@@ -204,3 +240,7 @@ static char INDICATOR_KEY;
 }
 
 %end
+
+// %ctor {
+//   updateUnreadIndicatorWithImage
+// }

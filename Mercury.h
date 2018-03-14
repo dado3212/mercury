@@ -28,7 +28,13 @@
 -(UIViewController *)presentingViewController;
 @end
 
+@interface CKConversationListCellLayout
++(id)sharedInstance;
+-(CGRect)unreadFrame;
+@end
+
 @interface CKConversationListCell : UITableViewCell
++(double)cellHeight;
 -(CKAvatarView *)avatarView;
 -(CKConversation *)conversation;
 
