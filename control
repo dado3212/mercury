@@ -1,11 +1,11 @@
 Package: com.hackingdartmouth.mercury
 Name: Mercury
 Depends: mobilesubstrate, org.thebigboss.libcolorpicker
-Version: 1.3.0
+Version: 1.3.1
 Architecture: iphoneos-arm
 Description: A tweak to add a "not-responded" indicator to Messages.
-Maintainer: Alex Beals <Alex.Beals.18@dartmouth.edu>
-Author: Alex Beals <Alex.Beals.18@dartmouth.edu>
+Maintainer: Alex Beals <alexcbeals+tweak@gmail.com>
+Author: Alex Beals <alexcbeals+tweak@gmail.com>
 Section: Tweaks
 Depiction: http://cydia.alexbeals.com/Mercury
 Icon: file:///Library/PreferenceBundles/MercuryPrefs.bundle/icon@2x.png

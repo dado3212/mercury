@@ -1,4 +1,5 @@
 #import "MercuryPrefs.h"
+#import <spawn.h>
 #import "../Utils.h"
 
 @interface MercuryListController: PSListController {
@@ -257,7 +258,11 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 }
 
 - (void)killMessages {
-  system("/usr/bin/killall -9 MobileSMS");
+  pid_t pid;
+  int status;
+  const char* args[] = {"killall", "-9", "MobileSMS", NULL};
+  posix_spawn(&pid, "/usr/bin/killall", NULL, NULL, (char* const*)args, NULL);
+  waitpid(pid, &status, WEXITED);
 }
 
 - (void)source {
@@ -269,6 +274,6 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
 }
 
 - (void)email {
-  [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"mailto:Alex.Beals.18@dartmouth.edu?subject=Cydia%3A%20Mercury"]];
+  [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"mailto:alexcbeals+tweak@gmail.com?subject=Cydia%3A%20Mercury"]];
 }
 @end
