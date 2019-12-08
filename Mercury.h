@@ -38,7 +38,9 @@
 -(CKAvatarView *)avatarView;
 -(CKConversation *)conversation;
 
--(void)addLongPressRecognizer;
+-(void)addClearIndicatorRecognizer;
 -(UIImageView *)getIndicator;
 -(void)setIndicator:(UIImageView *)indicator;
+
+-(void)_triggerPopup;
 @end

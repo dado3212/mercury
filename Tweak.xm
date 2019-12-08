@@ -161,7 +161,7 @@ static char INDICATOR_KEY;
 
 -(id)initWithStyle:(long long)arg1 reuseIdentifier:(id)arg2 {
   self = %orig;
-  [self addLongPressRecognizer];
+  [self addClearIndicatorRecognizer];
   return self;
 }
 
@@ -185,26 +185,59 @@ static char INDICATOR_KEY;
 }
 
 %new
-- (void)addLongPressRecognizer {
-  // Remove all other long press recognizers
-  NSArray *gestureRecognizers = [self gestureRecognizers];
-  for (UIGestureRecognizer *recognizer in gestureRecognizers) {
-    if ([recognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
-      [self removeGestureRecognizer:recognizer];
-    }
+- (void)addClearIndicatorRecognizer {
+  NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:kPrefPath];
+  if (!prefs) {
+    prefs = [Utils getDefaultPrefs];
   }
-  // Add my own recognizer
-  UILongPressGestureRecognizer *recognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)];
-  recognizer.minimumPressDuration = 0.25;
-  [self addGestureRecognizer:recognizer];
-  self.userInteractionEnabled = YES;
+  NSNumber *triggerPref = prefs[kTriggerKey];
+  int type = triggerPref ? [triggerPref intValue] : 0;
+  [prefs release];
 
-  [recognizer release];
+  if (type == 0) {
+    // Remove all other long press recognizers
+    NSArray *gestureRecognizers = [self gestureRecognizers];
+    for (UIGestureRecognizer *recognizer in gestureRecognizers) {
+      if ([recognizer isKindOfClass:[UILongPressGestureRecognizer class]]) {
+        [self removeGestureRecognizer:recognizer];
+      }
+    }
+    UILongPressGestureRecognizer *recognizer = [[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(didLongPress:)] autorelease];
+    recognizer.minimumPressDuration = 0.25;
+    [self addGestureRecognizer:recognizer];
+    self.userInteractionEnabled = YES;
+  } else if (type == 1) {
+    // Remove other three tap recognizers
+    NSArray *gestureRecognizers = [self gestureRecognizers];
+    for (UIGestureRecognizer *recognizer in gestureRecognizers) {
+      if (
+        [recognizer isKindOfClass:[UITapGestureRecognizer class]] && 
+        ((UITapGestureRecognizer *)recognizer).numberOfTouchesRequired == 3
+      ) {
+        [self removeGestureRecognizer:recognizer];
+      }
+    }
+    // Add my own recognizer
+    UITapGestureRecognizer *recognizer = [[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(didTap:)] autorelease];
+    recognizer.numberOfTouchesRequired = 3;
+    [self addGestureRecognizer:recognizer];
+    self.userInteractionEnabled = YES;
+  }
 }
 
 %new
 - (void)didLongPress:(UILongPressGestureRecognizer *)recognizer {
   if (recognizer.state != UIGestureRecognizerStateBegan) { return; }
+  [self _triggerPopup];
+}
+
+%new
+- (void)didTap:(UITapGestureRecognizer *)recognizer {
+  [self _triggerPopup];
+}
+
+%new
+- (void)_triggerPopup {
   // Create sheet popup
   UIAlertController* alert = [UIAlertController alertControllerWithTitle:nil
     message:nil
@@ -240,7 +273,3 @@ static char INDICATOR_KEY;
 }
 
 %end
-
-// %ctor {
-//   updateUnreadIndicatorWithImage
-// }

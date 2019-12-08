@@ -149,6 +149,17 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
                                edit:Nil];
       [groups setProperty:@([prefs[kTypeKey] intValue] != 3) forKey:@"enabled"];
       [specs addObject:groups];
+
+      // Trigger Type
+      PSSpecifier* triggerType = [PSSpecifier preferenceSpecifierNamed:@"Trigger"
+              target:self
+                 set:@selector(setPreferenceValue:specifier:)
+                 get:@selector(readPreferenceValue:)
+              detail:Nil
+                cell:PSSegmentCell
+                edit:Nil];
+      [triggerType setValues:@[@0, @1] titles:@[@"Long Press", @"Three-Fingered Tap"]];
+      [specs addObject:triggerType];
     }
 
     // About section
@@ -239,6 +250,9 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
     return [prefs[kTypeKey] intValue] != 3 ? prefs[kGroupsKey] : @NO;
   } else if ([[specifier name] isEqualToString:@"Radius"]) {
     return prefs[kRadiusKey];
+  } else if ([[specifier name] isEqualToString:@"Trigger"]) {
+    NSNumber *num = prefs[kTriggerKey];
+    return num ? num : @0;
   }
   return nil;
 }
@@ -251,6 +265,8 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
     [prefs setValue:value forKey:kGroupsKey];
   } else if ([[specifier name] isEqualToString:@"Radius"]) {
     [prefs setValue:value forKey:kRadiusKey];
+  } else if ([[specifier name] isEqualToString:@"Trigger"]) {
+    [prefs setValue:value forKey:kTriggerKey];
   }
   [prefs writeToFile:kPrefPath atomically:YES];
   [self reloadSpecifiers];

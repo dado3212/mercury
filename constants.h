@@ -12,3 +12,6 @@
 
 #define kGroupsKey @"groups"
 #define kGroupsDefault @NO
+
+#define kTriggerKey @"trigger"
+#define kTriggerDefault @0
