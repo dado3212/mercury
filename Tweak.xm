@@ -5,6 +5,44 @@
 
 static char INDICATOR_KEY;
 
+%hook CKConversationListController
+
+%new
+- (UISwipeActionsConfiguration *)tableView:(UITableView *)tableView leadingSwipeActionsConfigurationForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+  NSDictionary *prefs = [[NSDictionary alloc] initWithContentsOfFile:kPrefPath];
+  if (!prefs) {
+    prefs = [Utils getDefaultPrefs];
+  }
+  NSNumber *triggerPref = prefs[kTriggerKey];
+  int type = triggerPref ? [triggerPref intValue] : 0;
+  [prefs release];
+  if (type != 2) {
+    return nil;
+  }
+  UIContextualAction *clearIndicatorAction = [UIContextualAction contextualActionWithStyle:UIContextualActionStyleNormal title:@"Clear\nIndicator" handler:^(UIContextualAction * _Nonnull action, __kindof UIView * _Nonnull sourceView, void (^ _Nonnull completionHandler)(BOOL)) {
+    UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
+    if ([cell isKindOfClass:[CKConversationListCell class]]) {
+      [((CKConversationListCell *)cell) _clearIndicator];
+    }
+    completionHandler(YES);
+  }];
+  // Dark mode compatibility
+  if ([UIColor respondsToSelector:@selector(systemIndigoColor)]) {
+    clearIndicatorAction.backgroundColor = [UIColor systemIndigoColor];
+  } else {
+    clearIndicatorAction.backgroundColor = [UIColor colorWithRed:88.0f/255.0f
+              green:86.0f/255.0f
+                blue:214.0f/255.0f
+              alpha:1.0f];
+  }
+
+  UISwipeActionsConfiguration *config = [UISwipeActionsConfiguration configurationWithActions:@[clearIndicatorAction]];
+  return config;
+}
+
+%end
+
 %hook CKConversationListCell
 -(void)layoutSubviews {
   // Load preferences
@@ -23,7 +61,7 @@ static char INDICATOR_KEY;
     return;
   }
 
-  UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault); 
+  UIColor *indicatorColor = LCPParseColorString(prefs[kColorKey], kColorDefault);
   bool needsResponse = (
     ![[[[self conversation] chat] lastFinishedMessage] isFromMe] &&
     (
@@ -211,7 +249,7 @@ static char INDICATOR_KEY;
     NSArray *gestureRecognizers = [self gestureRecognizers];
     for (UIGestureRecognizer *recognizer in gestureRecognizers) {
       if (
-        [recognizer isKindOfClass:[UITapGestureRecognizer class]] && 
+        [recognizer isKindOfClass:[UITapGestureRecognizer class]] &&
         ((UITapGestureRecognizer *)recognizer).numberOfTouchesRequired == 3
       ) {
         [self removeGestureRecognizer:recognizer];
@@ -237,6 +275,23 @@ static char INDICATOR_KEY;
 }
 
 %new
+- (void)_clearIndicator {
+  // Saves the ID for the most recent message in the chat
+  NSString *messageGuid = [[[[self conversation] chat] lastFinishedMessage] guid];
+  NSString *chatGuid = [[self conversation] groupID];
+  NSMutableDictionary *cached = [[NSMutableDictionary alloc] initWithContentsOfFile:kClearedPath];
+  if (cached == nil) {
+    cached = [[NSMutableDictionary alloc] init];
+  }
+  cached[chatGuid] = messageGuid;
+  [cached writeToFile:kClearedPath atomically:YES];
+  [cached release];
+
+  UIImageView *currentIndicator = [self getIndicator];
+  [currentIndicator setHidden:true];
+}
+
+%new
 - (void)_triggerPopup {
   // Create sheet popup
   UIAlertController* alert = [UIAlertController alertControllerWithTitle:nil
@@ -250,19 +305,7 @@ static char INDICATOR_KEY;
   UIAlertAction* clearIndicator = [UIAlertAction actionWithTitle:@"Clear Indicator"
     style:UIAlertActionStyleDefault
     handler:^(UIAlertAction * action) {
-      // Saves the ID for the most recent message in the chat
-      NSString *messageGuid = [[[[self conversation] chat] lastFinishedMessage] guid];
-      NSString *chatGuid = [[self conversation] groupID];
-      NSMutableDictionary *cached = [[NSMutableDictionary alloc] initWithContentsOfFile:kClearedPath];
-      if (cached == nil) {
-        cached = [[NSMutableDictionary alloc] init];
-      }
-      cached[chatGuid] = messageGuid;
-      [cached writeToFile:kClearedPath atomically:YES];
-      [cached release];
-
-      UIImageView *currentIndicator = [self getIndicator];
-      [currentIndicator setHidden:true];
+      [self _clearIndicator];
     }];
 
   [alert addAction:cancelButton];

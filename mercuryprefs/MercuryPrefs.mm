@@ -48,7 +48,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
   textField.keyboardType = UIKeyboardTypeNumberPad;
   textField.autocapitalizationType = UITextAutocapitalizationTypeNone;
   textField.autocorrectionType = UITextAutocorrectionTypeNo;
-  
+
   // Add done button to keyboard popup
   UIToolbar *toolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0,[UIScreen mainScreen].bounds.size.width, 50)];
   toolbar.items = [NSArray arrayWithObjects:
@@ -87,7 +87,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
                             cell:PSGroupCell
                             edit:Nil];
     [specs addObject:group];
-    
+
     // Indicator Type
     PSSpecifier* indicatorType = [PSSpecifier preferenceSpecifierNamed:@"Type"
             target:self
@@ -158,7 +158,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
               detail:Nil
                 cell:PSSegmentCell
                 edit:Nil];
-      [triggerType setValues:@[@0, @1] titles:@[@"Long Press", @"Three-Fingered Tap"]];
+      [triggerType setValues:@[@0, @1, @2] titles:@[@"Long Press", @"Three-Fingered Tap", @"Swipe Left"]];
       [specs addObject:triggerType];
     }
 
@@ -238,7 +238,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
     [prefs writeToFile:kPrefPath atomically:YES];
 
     [self reloadSpecifiers];
-    [self killMessages]; 
+    [self killMessages];
   }];
 }
 

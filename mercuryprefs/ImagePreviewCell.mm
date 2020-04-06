@@ -18,7 +18,7 @@
     [_bgImage release];
 
     // Add avatar
-    _avatar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/contactimage.png"]];
+    _avatar = [[UIImageView alloc] initWithImage:[UIImage imageWithContentsOfFile:@"/Library/PreferenceBundles/MercuryPrefs.bundle/ContactImage.png"]];
     _avatar.frame = CGRectMake(28, 10, 45, 45);
     [self.contentView addSubview:_avatar];
 

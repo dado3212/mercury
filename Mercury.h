@@ -43,4 +43,5 @@
 -(void)setIndicator:(UIImageView *)indicator;
 
 -(void)_triggerPopup;
+-(void)_clearIndicator;
 @end

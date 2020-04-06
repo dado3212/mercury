@@ -1,9 +1,12 @@
-ARCHS = armv7 armv7s arm64 arm64e
+ARCHS = arm64 arm64e
 
 THEOS_DEVICE_IP = localhost
 THEOS_DEVICE_PORT = 2222
 
 FINALPACKAGE = 1
+
+SDKVERSION = 12.2
+SYSROOT = theos/sdks/iPhoneOS12.2.sdk
 
 include theos/makefiles/common.mk
 
