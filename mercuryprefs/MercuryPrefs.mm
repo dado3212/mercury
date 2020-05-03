@@ -158,7 +158,7 @@ static UIView *searchSubviews(UIView *view, Evaluator search) {
               detail:Nil
                 cell:PSSegmentCell
                 edit:Nil];
-      [triggerType setValues:@[@0, @1, @2] titles:@[@"Long Press", @"Three-Fingered Tap", @"Swipe Left"]];
+      [triggerType setValues:@[@0, @1, @2] titles:@[@"Long Press", @"Three-Fingered Tap", @"Swipe Right"]];
       [specs addObject:triggerType];
     }
 
